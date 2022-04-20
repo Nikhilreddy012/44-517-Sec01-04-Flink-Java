@@ -20,6 +20,7 @@ import org.apache.beam.sdk.values.TypeDescriptor;
 
 
 public class PageRankMehal {
+  
 
   static class Job1Finalizer extends DoFn<KV<String, Iterable<String>>, KV<String, RankedPage>> {
     @ProcessElement
