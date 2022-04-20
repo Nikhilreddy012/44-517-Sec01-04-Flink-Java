@@ -1,11 +1,15 @@
 package edu.nwmissouri.deccanchargers;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.Count;
+import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.transforms.FlatMapElements;
 import org.apache.beam.sdk.transforms.Flatten;
@@ -18,6 +22,33 @@ import org.apache.beam.sdk.values.PDone;
 import org.apache.beam.sdk.values.TypeDescriptor;
 
 public class PageRankRupin {
+
+        static class Job1Finalizer extends DoFn<KV<String, Iterable<String>>, KV<String, RankedPage>> {
+                @ProcessElement
+                public void processElement(@Element KV<String, Iterable<String>> element,
+                    OutputReceiver<KV<String, RankedPage>> receiver) {
+                  Integer contributorVotes = 0;
+                  if (element.getValue() instanceof Collection) {
+                    contributorVotes = ((Collection<String>) element.getValue()).size();
+                  }
+                  ArrayList<VotingPage> voters = new ArrayList<VotingPage>();
+                  for (String voterName : element.getValue()) {
+                    if (!voterName.isEmpty()) {
+                      voters.add(new VotingPage(voterName, contributorVotes));
+                    }
+                  }
+                  receiver.output(KV.of(element.getKey(), new RankedPage(element.getKey(), voters)));
+                }
+              }
+            
+              
+        
+        static class Job2Mapper extends DoFn<KV<String, RankedPage>, KV<String, RankedPage>> {
+                
+      
+        static class Job2Updater extends DoFn<KV<String, Iterable<RankedPage>>, KV<String, RankedPage>> {
+        }   
+            
     public static void main(String[] args) {
         PipelineOptions options = PipelineOptionsFactory.create();
         Pipeline pl = Pipeline.create(options);
