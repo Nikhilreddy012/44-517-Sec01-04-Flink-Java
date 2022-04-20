@@ -87,6 +87,7 @@ import org.apache.beam.sdk.values.PCollectionList;
  * file service.
  */
 public class PageRankYaswant {
+
         static class Job1Finalizer extends DoFn<KV<String, Iterable<String>>, KV<String, RankedPage>> {
                 @ProcessElement
                 public void processElement(@Element KV<String, Iterable<String>> element,
