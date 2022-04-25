@@ -37,6 +37,10 @@ PageRank is a mechanism for ranking web pages that was developed at Stanford Uni
 
 # Yaswant Lakkaraju
 
+[My wiki link](https://github.com/Nikhilreddy012/44-517-Sec01-04-Flink-Java/wiki/Yaswant-Lakkaraju)
+
+[My folder](https://github.com/Nikhilreddy012/44-517-Sec01-04-Flink-Java/tree/main/Yaswant)
+
 # Mehal Reddy Mula
 
 # Roopin Vipparthi
