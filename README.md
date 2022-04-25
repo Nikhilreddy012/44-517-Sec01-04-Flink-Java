@@ -8,6 +8,9 @@ Google Page Rank System project using Java language.
 
 PageRank is a mechanism for ranking web pages that was developed at Stanford University by Google's founders Larry Page and Sergey Brin. It's all about links when it comes to PageRank. The more authoritative a link is, the higher its PageRank. The PageRank algorithm can be summarized as a method of determining the significance of a webpage by examining the quantity and quality of links that lead to it.
 
+### Page Rank Algorithm
+The PageRank algorithm generates a probability distribution that is used to indicate the possibility of a random user clicking on links ending up on a specific page. PageRank can be determined for any large collection of documents. Several research publications assume that at the start of the computational process, the distribution is uniformly distributed among all documents in the collection. The PageRank computations necessitate numerous trips through the collection, referred known as "iterations," in order to update approximation PageRank values to more nearly represent the theoretical actual value.
+
 ### Team Members
 
 <table>
