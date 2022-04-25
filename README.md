@@ -31,7 +31,9 @@ The PageRank algorithm generates a probability distribution that is used to indi
 ### Our weekly work log is updated here: [Wiki](https://github.com/Nikhilreddy012/44-517-Sec01-04-Flink-Java/wiki)
 
 # Nikhil Reddy Pannala
+[My wiki link](https://github.com/Nikhilreddy012/44-517-Sec01-04-Flink-Java/wiki/Nikhil-Reddy-Pannala)
 
+[My folder](https://github.com/Nikhilreddy012/44-517-Sec01-04-Flink-Java/tree/main/Nikhil)
 # Balaji Sarvepalli
 
 [Link to MyFolder](https://github.com/Nikhilreddy012/44-517-Sec01-04-Flink-Java/tree/main/Balaji)
