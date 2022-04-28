@@ -18,25 +18,23 @@
 
 
 package edu.nwmissouri.deccancharges.Balajisarvepalli;
-import java.util.Arrays;
-import java.util.Collection;
+
 import java.util.ArrayList;
+import java.util.Collection;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
-import org.apache.beam.sdk.transforms.Count;
 import org.apache.beam.sdk.transforms.DoFn;
-import org.apache.beam.sdk.transforms.GroupByKey;
 import org.apache.beam.sdk.transforms.Filter;
-import org.apache.beam.sdk.transforms.FlatMapElements;
 import org.apache.beam.sdk.transforms.Flatten;
-import org.apache.beam.sdk.transforms.ParDo;
+import org.apache.beam.sdk.transforms.GroupByKey;
 import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.values.KV;
+import org.apache.beam.sdk.values.TypeDescriptors;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
-import org.apache.beam.sdk.values.TypeDescriptors;
 
 
 public class MinimalPageRankBalaji {
@@ -75,6 +73,58 @@ public class MinimalPageRankBalaji {
       receiver.output(KV.of(element.getKey(), new RankedPage(element.getKey(), voters)));
     }
   }
+
+  static class Job2Mapper extends DoFn<KV<String, RankedPage>, KV<String, RankedPage>> {
+    @ProcessElement
+    public void processElement(@Element KV<String, RankedPage> element,
+        OutputReceiver<KV<String, RankedPage>> receiver) {
+      int votes = 0;
+      ArrayList<VotingPage> voters = element.getValue().getVoterList();
+      if (voters instanceof Collection) {
+        votes = ((Collection<VotingPage>) voters).size();
+      }
+      for (VotingPage vp : voters) {
+        String pageName = vp.getVoterName();
+        double pageRank = vp.getPageRank();
+        String contributingPageName = element.getKey();
+        double contributingPageRank = element.getValue().getRank();
+        VotingPage contributor = new VotingPage(contributingPageName, votes, contributingPageRank);
+        ArrayList<VotingPage> arr = new ArrayList<>();
+        arr.add(contributor);
+        receiver.output(KV.of(vp.getVoterName(), new RankedPage(pageName, pageRank, arr)));
+      }
+    }
+  }
+
+  static class Job2Updater extends DoFn<KV<String, Iterable<RankedPage>>, KV<String, RankedPage>> {
+    @ProcessElement
+    public void processElement(@Element KV<String, Iterable<RankedPage>> element,
+        OutputReceiver<KV<String, RankedPage>> receiver) {
+      Double dampingFactor = 0.85;
+      Double updatedRank = (1 - dampingFactor);
+      ArrayList<VotingPage> newVoters = new ArrayList<>();
+      for (RankedPage rankPage : element.getValue()) {
+        if (rankPage != null) {
+          for (VotingPage votingPage : rankPage.getVoterList()) {
+            newVoters.add(votingPage);
+            updatedRank += (dampingFactor) * votingPage.getPageRank() / (double) votingPage.getContributorVotes();
+          }
+        }
+      }
+      receiver.output(KV.of(element.getKey(), new RankedPage(element.getKey(), updatedRank, newVoters)));
+
+    }
+
+  }
+
+  static class Job3 extends DoFn<KV<String, RankedPage>, KV<Double, String>> {
+    @ProcessElement
+    public void processElement(@Element KV<String, RankedPage> element,
+        OutputReceiver<KV<Double, String>> receiver) {
+      receiver.output(KV.of(element.getValue().getRank(), element.getKey()));
+    }
+  }
+
   public static void main(String[] args) {
     PipelineOptions options = PipelineOptionsFactory.create();
 
@@ -90,9 +140,27 @@ public class MinimalPageRankBalaji {
    
     PCollectionList<KV<String, String>> pCollectionList = PCollectionList.of(pKVcollection1).and(pKVcollection2).and(pKVcollection3).and(pKVcollection4);
     PCollection<KV<String, String>> mergedList = pCollectionList.apply(Flatten.<KV<String,String>>pCollections());
-    PCollection<String> pLinksString = mergedList.apply(MapElements.into(TypeDescriptors.strings()).via((mergeOut)->mergeOut.toString()));
-    pLinksString.apply(TextIO.write().to("BalajiPR"));  
-    p.run().waitUntilFinish();
+    PCollection<KV<String, Iterable<String>>> pColGroupByKey = mergedList.apply(GroupByKey.create());
+    PCollection<KV<String, RankedPage>> job2in = pColGroupByKey.apply(ParDo.of(new Job1Finalizer()));
+    PCollection<KV<String, RankedPage>> job2out = null;
+
+    int iterations = 50;
+    for (int i = 1; i <= iterations; i++) {
+      PCollection<KV<String, RankedPage>> job2Mapper = job2in.apply(ParDo.of(new Job2Mapper()));
+
+      PCollection<KV<String, Iterable<RankedPage>>> job2MapperGrpByKey = job2Mapper.apply(GroupByKey.create());
+
+      job2out = job2MapperGrpByKey.apply(ParDo.of(new Job2Updater()));
+      job2in = job2out;
+    }
+
+    PCollection<String> pColctnStringLists = job2out.apply(
+      MapElements.into(
+          TypeDescriptors.strings()).via(
+              kvtoString -> kvtoString.toString()));
+  pColctnStringLists.apply(TextIO.write().to("BalajiPR"));
+
+  p.run().waitUntilFinish();
   }
 
   public static PCollection<KV<String,String>> BalajiMapper01(Pipeline p, String filename, String dataFolder){
